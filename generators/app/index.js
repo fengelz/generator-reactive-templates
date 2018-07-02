@@ -8,9 +8,9 @@ module.exports = class extends Generator {
     // Have Yeoman greet the user.
     this.log(
       yosay(
-        'Welcome to the sweet ' +
-          chalk.red('generator-reactive-templates') +
-          ' generator!'
+        `Welcome to the stupendous ${chalk.red(
+          'generator-reactive-templates'
+        )} generator!`
       )
     );
 
@@ -30,10 +30,8 @@ module.exports = class extends Generator {
   }
 
   writing() {
-    this.fs.copy(
-      this.templatePath('dummyfile.txt'),
-      this.destinationPath('dummyfile.txt')
-    );
+    this.fs.copy(this.templatePath('**/*'), this.destinationRoot());
+    this.fs.copy(this.templatePath('.*'), this.destinationRoot());
   }
 
   install() {
