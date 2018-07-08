@@ -1,0 +1,3 @@
+[submodule "reactive-templates"]
+	path = reactive-templates
+	url = https://github.com/fengelz/reactive-templates.git
