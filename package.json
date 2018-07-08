@@ -1,6 +1,6 @@
 {
   "name": "generator-reactive-templates",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Yeoman generator using react as a templating system, to generate html pages",
   "homepage": "https://github.com/fengelz/generator-reactive-templates",
   "author": {
