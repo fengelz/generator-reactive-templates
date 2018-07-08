@@ -1,10 +1,10 @@
 {
   "name": "generator-reactive-templates",
   "version": "1.0.2",
-  "description": "A generator ",
+  "description": "Yeoman generator using react as a templating system, to generate html pages",
   "homepage": "https://github.com/fengelz/generator-reactive-templates",
   "author": {
-    "name": "Sune",
+    "name": "Sune Fengel",
     "email": "fengel@gmail.com",
     "url": "http://fengel.com"
   },
