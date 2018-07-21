@@ -16,29 +16,42 @@ const paths = {
   components: 'src/components/',
   scss: 'src/scss/',
   assets: 'src/assets/',
-  public: 'public/'
+  public: 'public/',
 }
 
 export const clean = () => {
   return del([paths.public])
 }
+export const cleanHtml = () => {
+  return del(`${paths.public}**/*.html`)
+}
+
+const clearRequireCache = () => {
+  for (const moduleId of Object.keys(require.cache)) {
+    if (moduleId.toString().indexOf('/src/') > 0) {
+      delete require.cache[require.resolve(moduleId)]
+    }
+  }
+  return src(paths.components)
+}
 
 export const buildHtml = () => {
-  return src(paths.components + 'pages/**/*.js')
+  
+  return src(`${paths.components}pages/**/*.js`)
     .pipe(reactRender({type: 'markup'}))
-    .pipe(flatten())
     .pipe(replace('&lt;!--', '<!--'))
     .pipe(replace('--&gt;', '-->'))
     .pipe(replace('&lt;![', '<!['))
     .pipe(replace(']&gt;', ']>'))
     .pipe(replace('&lt;?', '<?'))
+    .pipe(flatten())
     .pipe(insert.prepend('<!doctype html>'))
     .pipe(htmlbeautify({indentSize: 2}))
     .pipe(dest(paths.public))
 }
 
 export const buildSass = () => {
-  return src(paths.scss + '/styles.scss')
+  return src(`${paths.scss}/styles.scss`)
   .pipe(sassGlob())
   .on('error', onError)
   .pipe(
@@ -54,48 +67,55 @@ export const buildSass = () => {
     })
   )
   .pipe(sourcemaps.write('.'))
-  .pipe(dest(paths.public + '/assets/css/'))
+  .pipe(dest(`${paths.public}/assets/css/`))
 }
 
 export const copyAssets = () => {
-  return src([ paths.assets + '**/*' ])
+  return src([ `${paths.assets}**/*` ])
     .pipe(dest(paths.public))
 }
 
 export const serve = () => {
   const server = gls.static('public', 3000)
   server.start()
-  watchSrc(['public/**/*.css', 'public/*.html'], (file) => {
-    server.notify(file).on('error', onError)
-  })
-  .on('error', onError)
+  watchSrc('public/**/*')
+  .on('change', path => server.notify.call(server, { path }))
 }
 
-export const watch = () => {
-  watchSrc(paths.scss + '**/*.scss', buildSass)
-  watchSrc(paths.components + '**/*.scss', buildSass)
-  watchSrc(paths.components + '**/*.js', buildHtml)
-  watchSrc(paths.assets + '**/*.*', {cwd: './'}, copyAssets)
+const watchStyles = () => {
+  return watchSrc(`${paths.scss}**/*.scss`, buildSass)  
 }
+const watchComponentStyles = () => {
+  return watchSrc(`${paths.components}**/*.scss`, buildSass)
+}
+const watchJs = () => {
+  const watcher = watchSrc(`${paths.components}**/*.js`, series(clearRequireCache, buildHtml, injectScripts))
+  }
+const watchAssets = () => {
+  return watchSrc(`${paths.assets}**/*.*`, {cwd: './'}, copyAssets)
+}
+
+const watchAll = parallel(watchStyles, watchComponentStyles, watchJs, watchAssets)
+watchAll.description = 'watch for changes to all source'
 
 export const injectScripts = () => {
-  const sources = src([paths.public + 'assets/**/*.js', paths.public + 'assets/**/*.css'], {read: false});
-  return src(paths.public + '*.html')
+  const sources = src([`${paths.public}assets/**/*.js`, `${paths.public}assets/**/*.css`], {read: false});
+  return src(`${paths.public}*.html`)
   .pipe(inject(sources, {ignorePath: 'public'}))
   .pipe(dest(paths.public))
 }
 
 function onError(error) {
-  console.log("ERROR:", error.message)
+  console.log('ERROR:', error.message)
   if (error.plugin) {
-    console.log('Plugin: ' + error.plugin)
+    console.log(`Plugin: ${error.plugin}`)
   }
   this.emit('end')
 }
 
 export const parallelTasks = parallel(buildHtml, buildSass, copyAssets)
 
-export const runningTasks = parallel(watch, serve)
+export const runningTasks = parallel(watchAll, serve)
 
 export const build = series(clean, parallelTasks, injectScripts, runningTasks)
 
